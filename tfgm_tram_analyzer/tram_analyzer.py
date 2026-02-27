@@ -195,6 +195,7 @@ def build_result(departures: list[dict]) -> dict:
             {
                 "departure_text": t["departure_text"],
                 "minutes_until": t["minutes_until"],
+                "destination": t["destination"],
                 "carriages": t["carriages"],
             }
             for t in target
