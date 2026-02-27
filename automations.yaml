@@ -1,0 +1,193 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# HOME ASSISTANT — Tram automations
+#
+# Paste these into your automations.yaml
+# Reload after pasting: Developer Tools → YAML → Reload Automations
+#
+# Before using:
+#   1. Replace notify.mobile_app_<your_device> with your notify service
+#   2. Replace notify.mobile_app_<your_second_device> with your second notify service (or remove)
+#   3. Replace notify.alexa_media_<your_alexa_device> with your Alexa notify service (or remove)
+#   4. Adjust time windows and catchable minute range to suit your commute
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ── 1. Trigger scrape every 2 mins during peak window ────────────────────────
+alias: Tram_Check - Morning Tram Periodic Check Early
+description: >
+  Triggers tram-analyzer sidecar every 2 minutes during peak morning window.
+  Adjust after/before times to match your commute window.
+triggers:
+  - trigger: time_pattern
+    minutes: /2
+conditions:
+  - condition: time
+    after: "07:55:00"
+    before: "08:30:00"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+actions:
+  - action: rest_command.fetch_tram_data
+    data: {}
+mode: single
+
+
+# ── 2. Trigger scrape every 5 mins during late window ────────────────────────
+alias: Tram_Check - Morning Tram Periodic Check Late
+description: >
+  Triggers tram-analyzer sidecar every 5 minutes after peak window.
+  Useful if you leave later occasionally.
+triggers:
+  - trigger: time_pattern
+    minutes: /5
+conditions:
+  - condition: time
+    after: "08:30:00"
+    before: "10:00:00"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+actions:
+  - action: rest_command.fetch_tram_data
+    data: {}
+mode: single
+
+
+# ── 3. Alert when tram is in catchable window ─────────────────────────────────
+alias: Tram_Check - Alert When Victoria Tram Close
+description: >
+  Sends phone + Alexa alert when a Victoria tram is 8-18 mins away.
+  Dedup logic: only re-alerts if 5+ mins since last alert OR it's a different tram.
+  Adjust minutes_until range to match your walk time to the stop.
+triggers:
+  - trigger: time_pattern
+    minutes: /2
+conditions:
+  - condition: time
+    after: "07:55:00"
+    before: "08:30:00"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+  - condition: template
+    value_template: >
+      {{ states('sensor.tram_next_victoria') not in
+         ['unavailable', 'unknown', 'Error', 'No service', 'error', 'none'] }}
+  - condition: template
+    value_template: >
+      {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+      {{ trams is not none and trams | length > 0 }}
+  - condition: template
+    value_template: >
+      {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+      {{ trams[0].minutes_until | int(default=99) >= 8 and
+         trams[0].minutes_until | int(default=99) <= 18 }}
+  - condition: template
+    value_template: >
+      {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+      {% set current_mins = trams[0].minutes_until | int %}
+      {% set last_alerted_mins = states('input_number.tram_last_alerted_minutes') | int %}
+      {% set last_alert_time = states('input_datetime.tram_last_alert_sent') | as_datetime %}
+      {% set mins_since_alert = (now() - last_alert_time).total_seconds() / 60 %}
+      {{ mins_since_alert >= 5 or (current_mins - last_alerted_mins) | abs >= 3 }}
+actions:
+  - action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.tram_last_alert_sent
+    data:
+      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.tram_last_alerted_minutes
+    data:
+      value: >
+        {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+        {{ trams[0].minutes_until | int }}
+  # ── Phone notification 1 — replace with your notify service ──
+  - action: notify.<your_device_notify_service>
+    data:
+      title: "🚋 Leave Now — Victoria Tram"
+      message: >-
+        {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+        Tram at {{ (now().timestamp() + trams[0].minutes_until * 60) | timestamp_custom('%H:%M') }} ({{ trams[0].minutes_until }} mins). Leave now!
+        {% if trams | length > 1 %}
+        Next tram at {{ (now().timestamp() + trams[1].minutes_until * 60) | timestamp_custom('%H:%M') }} if you miss it.
+        {% endif %}
+      data:
+        sound: "default"
+        push:
+          interruption-level: time-sensitive
+  # ── Phone notification 2 — remove if only one person ──
+  - action: notify.<your_second_device_notify_service>
+    data:
+      title: "🚋 Leave Now — Victoria Tram"
+      message: >-
+        {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+        Tram at {{ (now().timestamp() + trams[0].minutes_until * 60) | timestamp_custom('%H:%M') }} ({{ trams[0].minutes_until }} mins). Leave now!
+        {% if trams | length > 1 %}
+        Next tram at {{ (now().timestamp() + trams[1].minutes_until * 60) | timestamp_custom('%H:%M') }} if you miss it.
+        {% endif %}
+      data:
+        sound: "default"
+        push:
+          interruption-level: time-sensitive
+  # ── Alexa announcement — remove if no Alexa ──
+  - action: notify.alexa_media_<your_alexa_device>
+    data:
+      message: >-
+        {% set trams = state_attr('sensor.tram_next_victoria', 'all_victoria_trams') %}
+        Leave now! Victoria tram at {{ (now().timestamp() + trams[0].minutes_until * 60) | timestamp_custom('%H:%M') }}, that is {{ trams[0].minutes_until }} minutes away.
+        {% if trams | length > 1 %}
+        If you miss it, next one is at {{ (now().timestamp() + trams[1].minutes_until * 60) | timestamp_custom('%H:%M') }}.
+        {% endif %}
+      data:
+        type: announce
+mode: single
+
+
+# ── 4. Alert on consecutive scrape failures ───────────────────────────────────
+alias: Tram_Check - Alert On Consecutive Failures
+description: >
+  Sends a phone notification if the scraper fails 2+ times in a row.
+  Covers network errors, TfGM page structure changes, container crashes.
+triggers:
+  - trigger: state
+    entity_id: sensor.tram_analyzer_health
+conditions:
+  - condition: time
+    after: "07:00:00"
+    before: "10:00:00"
+  - condition: time
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+  - condition: template
+    value_template: >
+      {{ state_attr('sensor.tram_analyzer_health', 'consecutive_failures') | int >= 2 }}
+actions:
+  - action: notify.<your_device_notify_service>
+    data:
+      title: "⚠️ Tram Analyzer Failing"
+      message: >-
+        Tram checker has failed {{ state_attr('sensor.tram_analyzer_health', 'consecutive_failures') }}
+        times in a row. Last error: {{ state_attr('sensor.tram_analyzer_health', 'last_error') | truncate(120) }}
+      data:
+        push:
+          interruption-level: active
+mode: single

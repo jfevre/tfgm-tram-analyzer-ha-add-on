@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Add this service block to your existing docker-compose.yml
+#
+# Prerequisites:
+#   - A Docker network shared with Home Assistant (default: hass_net)
+#   - A directory for tram data output: ./config/tram_data/
+#
+# HA reaches the sidecar via Docker DNS: http://tram-analyzer:5001
+# No ports need to be exposed externally.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  tram-analyzer:
+    build: ./tram-analyzer
+    container_name: tram-analyzer
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+      # Your TfGM stop URL — find yours at https://tfgm.com/public-transport/tram
+      - TRAM_WEBSITE_URL=https://tfgm.com/travel-updates/live-departures/tram/wythenshawe-park-tram
+      # Destination to filter for (lowercase)
+      - DESTINATION=victoria
+      # Flush Python logs immediately — no buffered/stale docker logs
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Output dir must be readable by Home Assistant container
+      # Adjust left side to match your HA config path
+      - ./config/tram_data:/app/output
+    networks:
+      - hass_net
+    # Uncomment for local testing only — remove for production
+    # ports:
+    #   - "5001:5001"
+
+networks:
+  hass_net:
+    external: true

@@ -1,0 +1,52 @@
+name: Test Tram Analyzer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 08:00 UTC to catch TfGM page structure changes
+    - cron: "0 8 * * 1-5"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Run tram analyzer
+        env:
+          OUTPUT_FILE: /tmp/tram_status.json
+          TRAM_WEBSITE_URL: https://tfgm.com/travel-updates/live-departures/tram/wythenshawe-park-tram
+          DESTINATION: victoria
+        run: |
+          uv run --with requests --with beautifulsoup4 \
+            tram-analyzer/tram_analyzer.py
+
+      - name: Validate output JSON
+        run: |
+          cat /tmp/tram_status.json | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          assert 'status' in data, 'Missing status field'
+          assert 'last_updated' in data, 'Missing last_updated field'
+          assert data['status'] in ['success', 'no_service', 'error'], f'Unexpected status: {data[\"status\"]}'
+          print(f'✅ Status: {data[\"status\"]}')
+          if data['status'] == 'success':
+              assert 'next_victoria_tram' in data, 'Missing next_victoria_tram'
+              assert 'minutes_until' in data['next_victoria_tram'], 'Missing minutes_until'
+              print(f'🚋 Next tram: {data[\"next_victoria_tram\"][\"departure_text\"]}')
+          print('✅ Output JSON is valid')
+          "
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tram-status
+          path: /tmp/tram_status.json

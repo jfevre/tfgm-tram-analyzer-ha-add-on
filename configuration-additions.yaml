@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# HOME ASSISTANT — configuration.yaml additions
+#
+# Add these blocks to your existing configuration.yaml
+# Requires a full HA restart after adding (not just reload)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# 1. REST command — HA calls this to trigger a scrape
+#    Sidecar must be reachable via Docker network at http://tram-analyzer:5001
+rest_command:
+  fetch_tram_data:
+    url: "http://tram-analyzer:5001/trigger"
+    method: POST
+    content_type: "application/json"
+
+
+# 2. Sensors — reads the JSON written by the sidecar
+#    Uses the new command_line: syntax required by HA 2024.6+
+command_line:
+  # Next tram sensor — state is the departure text, attributes are the full tram list
+  - sensor:
+      name: "Tram Next Victoria"
+      command: "cat /config/tram_data/tram_status.json 2>/dev/null || echo '{\"status\":\"unavailable\"}'"
+      scan_interval: 60
+      value_template: >
+        {% if value_json.status == 'success' %}
+          {{ value_json.next_victoria_tram.departure_text }}
+        {% elif value_json.status == 'no_service' %}
+          No service
+        {% elif value_json.status == 'error' %}
+          Error
+        {% else %}
+          {{ value_json.status | default('unavailable') }}
+        {% endif %}
+      json_attributes:
+        - status
+        - next_victoria_tram
+        - all_victoria_trams
+        - last_updated
+        - message
+        - all_departures
+
+  # Health sensor — tracks consecutive failures for alert automation
+  - sensor:
+      name: "Tram Analyzer Health"
+      command: >
+        curl -sf --max-time 5 http://tram-analyzer:5001/status 2>/dev/null
+        || echo '{"state":"unreachable","consecutive_failures":0}'
+      scan_interval: 60
+      value_template: "{{ value_json.state }}"
+      json_attributes:
+        - state
+        - last_run
+        - last_success
+        - last_error
+        - consecutive_failures
+
+
+# 3. Input helpers — dedup tracking for alert automation on phones
+#    Tracks when last alert was sent and which tram was alerted about
+input_number:
+  tram_last_alerted_minutes:
+    name: "Tram Last Alerted Minutes"
+    min: 0
+    max: 99
+    step: 1
+    initial: 0
+    icon: mdi:tram
+
+input_datetime:
+  tram_last_alert_sent:
+    name: "Tram Last Alert Sent"
+    has_date: true
+    has_time: true
