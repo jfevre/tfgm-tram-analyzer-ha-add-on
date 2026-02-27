@@ -1,4 +1,4 @@
-requests
-beautifulsoup4
-fastapi
-uvicorn
+requests>=2.32
+beautifulsoup4>=4.12
+fastapi>=0.115
+uvicorn>=0.32
