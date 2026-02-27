@@ -2,13 +2,13 @@
 
 # Read add-on options and export as environment variables
 export TRAM_WEBSITE_URL=$(bashio::config 'tram_website_url')
-export DESTINATION=$(bashio::config 'destination')
-export OUTPUT_FILE=/share/tram_status.json
+export DESTINATIONS=$(bashio::config 'destinations | join(",")')
+export SCAN_INTERVAL=$(bashio::config 'scan_interval')
 export PYTHONUNBUFFERED=1
 
-bashio::log.info "Starting TfGM Tram Analyzer"
+bashio::log.info "Starting TfGM Tram Analyzer v3.0"
 bashio::log.info "Stop URL: ${TRAM_WEBSITE_URL}"
-bashio::log.info "Destination: ${DESTINATION}"
-bashio::log.info "Output: ${OUTPUT_FILE}"
+bashio::log.info "Destinations: ${DESTINATIONS}"
+bashio::log.info "Scan interval: ${SCAN_INTERVAL}s"
 
 exec python3 /app/api.py

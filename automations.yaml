@@ -4,6 +4,8 @@
 # Paste these into your automations.yaml
 # Reload after pasting: Developer Tools → YAML → Reload Automations
 #
+# The add-on now handles its own scheduling — no trigger automations needed.
+#
 # Before using:
 #   1. Replace notify.mobile_app_<your_device> with your notify service
 #   2. Replace notify.mobile_app_<your_second_device> with your second notify service (or remove)
@@ -12,65 +14,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-# ── 1. Trigger scrape every 2 mins during peak window ────────────────────────
-alias: Tram_Check - Morning Tram Periodic Check Early
-description: >
-  Triggers tram-analyzer sidecar every 2 minutes during peak morning window.
-  Adjust after/before times to match your commute window.
-triggers:
-  - trigger: time_pattern
-    minutes: /2
-conditions:
-  - condition: time
-    after: "07:55:00"
-    before: "08:30:00"
-  - condition: time
-    weekday:
-      - mon
-      - tue
-      - wed
-      - thu
-      - fri
-actions:
-  - action: rest_command.fetch_tram_data
-    data: {}
-mode: single
-
-
-# ── 2. Trigger scrape every 5 mins during late window ────────────────────────
-alias: Tram_Check - Morning Tram Periodic Check Late
-description: >
-  Triggers tram-analyzer sidecar every 5 minutes after peak window.
-  Useful if you leave later occasionally.
-triggers:
-  - trigger: time_pattern
-    minutes: /5
-conditions:
-  - condition: time
-    after: "08:30:00"
-    before: "10:00:00"
-  - condition: time
-    weekday:
-      - mon
-      - tue
-      - wed
-      - thu
-      - fri
-actions:
-  - action: rest_command.fetch_tram_data
-    data: {}
-mode: single
-
-
-# ── 3. Alert when tram is in catchable window ─────────────────────────────────
+# ── 1. Alert when tram is in catchable window ─────────────────────────────────
 alias: Tram_Check - Alert When Tram Close
 description: >
   Sends phone + Alexa alert when a tram is 8-18 mins away.
+  Fires each time the add-on pushes a new sensor state (every scan_interval seconds).
   Dedup logic: only re-alerts if 5+ mins since last alert OR it's a different tram.
   Adjust minutes_until range to match your walk time to the stop.
 triggers:
-  - trigger: time_pattern
-    minutes: /2
+  - trigger: state
+    entity_id: sensor.tram_next_departure
 conditions:
   - condition: time
     after: "07:55:00"
@@ -158,7 +111,7 @@ actions:
 mode: single
 
 
-# ── 4. Alert on consecutive scrape failures ───────────────────────────────────
+# ── 2. Alert on consecutive scrape failures ───────────────────────────────────
 alias: Tram_Check - Alert On Consecutive Failures
 description: >
   Sends a phone notification if the scraper fails 2+ times in a row.

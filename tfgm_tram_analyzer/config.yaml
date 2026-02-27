@@ -1,22 +1,26 @@
 name: TfGM Tram Analyzer
-version: "2.1.0"
+version: "3.0.0"
 slug: tfgm_tram_analyzer
-description: Scrapes TfGM Metrolink live departure boards and exposes tram timing data to Home Assistant via a local HTTP API.
+description: Scrapes TfGM Metrolink live departure boards and pushes tram timing data directly to Home Assistant via the Supervisor API.
 url: "https://github.com/jfevre/tfgm-tram-analyzer-ha-add-on"
 image: "ghcr.io/jfevre/{arch}-addon-tfgm_tram_analyzer"
 arch:
   - aarch64
   - amd64
 init: false
-map:
-  - share:rw
+hassio_api: true
+homeassistant_api: true
 ports:
   5001/tcp: 5001
 ports_description:
-  5001/tcp: Tram Analyzer API
+  5001/tcp: Tram Analyzer API (debug)
 options:
   tram_website_url: "https://tfgm.com/travel-updates/live-departures/tram/prestwich-tram"
-  destination: "Piccadilly"
+  destinations:
+    - "Piccadilly"
+  scan_interval: 120
 schema:
   tram_website_url: str
-  destination: str
+  destinations:
+    - str
+  scan_interval: int

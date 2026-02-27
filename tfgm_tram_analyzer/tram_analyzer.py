@@ -7,7 +7,7 @@ Scrapes the TfGM Bee Network departure board and outputs structured JSON.
 Configuration via environment variables:
   TRAM_WEBSITE_URL  — TfGM departure page URL for your stop
   OUTPUT_FILE       — Path to write JSON output (default: /share/tram_status.json)
-  DESTINATION       — Destination to filter for (default: victoria)
+  DESTINATIONS      — Comma-separated destinations to filter for (e.g. "Piccadilly,Altrincham")
 """
 
 import os
@@ -22,7 +22,11 @@ URL = os.getenv(
     "https://tfgm.com/travel-updates/live-departures/tram/prestwich-tram"
 )
 OUTPUT_FILE = os.getenv("OUTPUT_FILE", "/share/tram_status.json")
-DESTINATION = os.getenv("DESTINATION", "Piccadilly").lower()
+DESTINATIONS = [
+    d.strip().lower()
+    for d in os.getenv("DESTINATIONS", "Piccadilly").split(",")
+    if d.strip()
+]
 
 HEADERS = {
     "User-Agent": (
@@ -160,26 +164,27 @@ def fetch_departures() -> list[dict]:
 
 
 def build_result(departures: list[dict]) -> dict:
-    """Filter for target destination and build output JSON."""
+    """Filter for target destinations and build output JSON."""
     target = [
         d for d in departures
-        if DESTINATION in d["destination"].lower()
+        if any(dest in d["destination"].lower() for dest in DESTINATIONS)
     ]
 
     now = datetime.now().isoformat()
+    dest_display = " / ".join(d.title() for d in DESTINATIONS)
 
     if not target:
         return {
             "status": "no_service",
-            "message": f"No {DESTINATION.title()}-bound trams in current departures",
-            "destination_filter": DESTINATION,
+            "message": f"No {dest_display}-bound trams in current departures",
+            "destination_filters": DESTINATIONS,
             "all_departures": departures,
             "timestamp": now,
         }
 
     return {
         "status": "success",
-        "destination_filter": DESTINATION,
+        "destination_filters": DESTINATIONS,
         "next_tram": {
             "departure_text": target[0]["departure_text"],
             "minutes_until": target[0]["minutes_until"],
@@ -197,6 +202,18 @@ def build_result(departures: list[dict]) -> dict:
         "all_departures": departures,
         "timestamp": now,
     }
+
+
+def fetch_and_build() -> dict:
+    """Fetch departures and build result dict. Does not write to file."""
+    departures = fetch_departures()
+    if not departures:
+        return {
+            "status": "error",
+            "error": "No departures parsed — page structure may have changed",
+            "timestamp": datetime.now().isoformat(),
+        }
+    return build_result(departures)
 
 
 def save_result(result: dict) -> dict:
@@ -219,29 +236,24 @@ def save_result(result: dict) -> dict:
 
 def main():
     start = datetime.now()
-    print(f"🚋 TfGM Tram Analyzer v2.1 — {start.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🚋 TfGM Tram Analyzer v3.0 — {start.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🔗 Stop: {URL}")
-    print(f"🎯 Filtering for: {DESTINATION.title()}\n")
+    dest_display = " / ".join(d.title() for d in DESTINATIONS)
+    print(f"🎯 Filtering for: {dest_display}\n")
 
     try:
-        departures = fetch_departures()
+        result = fetch_and_build()
 
-        if not departures:
-            print("⚠️  No departures found — TfGM page structure may have changed")
-            result = {
-                "status": "error",
-                "error": "No departures parsed — page structure may have changed",
-                "timestamp": datetime.now().isoformat(),
-            }
+        if result.get("status") == "error":
+            print(f"⚠️  {result.get('error')}")
         else:
+            departures = result.get("all_departures", [])
             print(f"✅ {len(departures)} departures found:")
             for d in departures:
-                icon = "🚋" if DESTINATION in d["destination"].lower() else "  "
+                icon = "🚋" if any(dest in d["destination"].lower() for dest in DESTINATIONS) else "  "
                 print(f"  {icon} {d['destination']} ({d['carriages']}) → {d['departure_text']}")
-
-            result = build_result(departures)
             target_count = len(result.get("all_destination_trams", []))
-            print(f"\n🎯 {DESTINATION.title()} trams: {target_count}")
+            print(f"\n🎯 {dest_display} trams: {target_count}")
 
         output = save_result(result)
         elapsed = (datetime.now() - start).total_seconds()
