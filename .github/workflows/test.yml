@@ -23,10 +23,10 @@ jobs:
         env:
           OUTPUT_FILE: /tmp/tram_status.json
           TRAM_WEBSITE_URL: https://tfgm.com/travel-updates/live-departures/tram/prestwich-tram
-          DESTINATION: Piccadilly
+          DESTINATIONS: Piccadilly
         run: |
           uv run --with requests --with beautifulsoup4 \
-            tfgm_tram_analyzer/tram_analyzer.py
+            tfgm_tram_analyzer/rootfs/app/tram_analyzer.py
 
       - name: Validate output JSON
         run: |

@@ -121,7 +121,6 @@ def fetch_departures() -> list[dict]:
         re.DOTALL | re.IGNORECASE
     )
     section = match.group(1) if match else body_text
-    print(f"📄 Raw departure section: {section[:400]}")
 
     # Build alternation from known destinations, longest first
     # to avoid partial matches (e.g. "Manchester Airport" before "Manchester")
