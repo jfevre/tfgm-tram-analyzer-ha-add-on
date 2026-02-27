@@ -19,10 +19,10 @@ from datetime import datetime
 
 URL = os.getenv(
     "TRAM_WEBSITE_URL",
-    "https://tfgm.com/travel-updates/live-departures/tram/wythenshawe-park-tram"
+    "https://tfgm.com/travel-updates/live-departures/tram/prestwich-tram"
 )
 OUTPUT_FILE = os.getenv("OUTPUT_FILE", "/share/tram_status.json")
-DESTINATION = os.getenv("DESTINATION", "victoria").lower()
+DESTINATION = os.getenv("DESTINATION", "Piccadilly").lower()
 
 HEADERS = {
     "User-Agent": (
@@ -186,23 +186,7 @@ def build_result(departures: list[dict]) -> dict:
             "destination": target[0]["destination"],
             "carriages": target[0]["carriages"],
         },
-        # Keep legacy key for backwards compatibility
-        "next_victoria_tram": {
-            "departure_text": target[0]["departure_text"],
-            "minutes_until": target[0]["minutes_until"],
-            "destination": target[0]["destination"],
-            "carriages": target[0]["carriages"],
-        },
         "all_destination_trams": [
-            {
-                "departure_text": t["departure_text"],
-                "minutes_until": t["minutes_until"],
-                "carriages": t["carriages"],
-            }
-            for t in target
-        ],
-        # Legacy key for backwards compatibility
-        "all_victoria_trams": [
             {
                 "departure_text": t["departure_text"],
                 "minutes_until": t["minutes_until"],

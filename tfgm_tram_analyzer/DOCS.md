@@ -26,12 +26,12 @@ rest_command:
 
 command_line:
   - sensor:
-      name: "Tram Next Victoria"
+      name: "Tram Next Departure"
       command: "cat /share/tram_status.json 2>/dev/null || echo '{\"status\":\"unavailable\"}'"
       scan_interval: 60
       value_template: >
         {% if value_json.status == 'success' %}
-          {{ value_json.next_victoria_tram.departure_text }}
+          {{ value_json.next_tram.departure_text }}
         {% elif value_json.status == 'no_service' %}
           No service
         {% elif value_json.status == 'error' %}
@@ -41,8 +41,8 @@ command_line:
         {% endif %}
       json_attributes:
         - status
-        - next_victoria_tram
-        - all_victoria_trams
+        - next_tram
+        - all_destination_trams
         - last_updated
         - message
         - all_departures

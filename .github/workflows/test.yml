@@ -38,9 +38,9 @@ jobs:
           assert data['status'] in ['success', 'no_service', 'error'], f'Unexpected status: {data[\"status\"]}'
           print(f'✅ Status: {data[\"status\"]}')
           if data['status'] == 'success':
-              assert 'next_victoria_tram' in data, 'Missing next_victoria_tram'
-              assert 'minutes_until' in data['next_victoria_tram'], 'Missing minutes_until'
-              print(f'🚋 Next tram: {data[\"next_victoria_tram\"][\"departure_text\"]}')
+              assert 'next_tram' in data, 'Missing next_tram'
+              assert 'minutes_until' in data['next_tram'], 'Missing minutes_until'
+              print(f'🚋 Next tram: {data[\"next_tram\"][\"departure_text\"]}')
           print('✅ Output JSON is valid')
           "
 
