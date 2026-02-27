@@ -4,7 +4,7 @@ FastAPI sidecar for TfGM Metrolink tram analyzer.
 
 Home Assistant triggers a scrape via HTTP POST /trigger.
 Runs analysis in background thread — HTTP response is immediate.
-Results written to /app/output/tram_status.json (shared volume).
+Results written to /share/tram_status.json (HA shared volume).
 HA reads JSON via command_line sensor every 60s.
 
 Endpoints:
@@ -35,7 +35,7 @@ _state = {
     "last_result": None,
 }
 _state_lock = threading.Lock()
-OUTPUT_FILE = "/app/output/tram_status.json"
+OUTPUT_FILE = os.getenv("OUTPUT_FILE", "/share/tram_status.json")
 
 
 # ── Background worker ─────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ def run_analysis():
             "last_updated": datetime.now().isoformat(),
         }
         try:
-            os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+            os.makedirs(os.path.dirname(os.path.abspath(OUTPUT_FILE)), exist_ok=True)
             with open(OUTPUT_FILE, "w") as f:
                 json.dump(error_payload, f, indent=2)
         except Exception as write_err:

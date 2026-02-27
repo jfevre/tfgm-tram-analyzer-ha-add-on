@@ -1,0 +1,14 @@
+#!/usr/bin/with-contenv bashio
+
+# Read add-on options and export as environment variables
+export TRAM_WEBSITE_URL=$(bashio::config 'tram_website_url')
+export DESTINATION=$(bashio::config 'destination')
+export OUTPUT_FILE=/share/tram_status.json
+export PYTHONUNBUFFERED=1
+
+bashio::log.info "Starting TfGM Tram Analyzer"
+bashio::log.info "Stop URL: ${TRAM_WEBSITE_URL}"
+bashio::log.info "Destination: ${DESTINATION}"
+bashio::log.info "Output: ${OUTPUT_FILE}"
+
+exec python3 /app/api.py

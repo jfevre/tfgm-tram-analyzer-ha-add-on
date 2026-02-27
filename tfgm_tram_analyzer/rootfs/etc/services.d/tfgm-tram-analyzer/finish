@@ -1,0 +1,3 @@
+#!/usr/bin/with-contenv bashio
+
+bashio::log.info "TfGM Tram Analyzer stopped"

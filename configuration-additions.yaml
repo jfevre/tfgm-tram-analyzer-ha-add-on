@@ -7,21 +7,21 @@
 
 
 # 1. REST command — HA calls this to trigger a scrape
-#    Sidecar must be reachable via Docker network at http://tram-analyzer:5001
+#    Add-on exposes port 5001 to the host; HA reaches it via localhost
 rest_command:
   fetch_tram_data:
-    url: "http://tram-analyzer:5001/trigger"
+    url: "http://localhost:5001/trigger"
     method: POST
     content_type: "application/json"
 
 
-# 2. Sensors — reads the JSON written by the sidecar
+# 2. Sensors — reads the JSON written by the add-on to /share
 #    Uses the new command_line: syntax required by HA 2024.6+
 command_line:
   # Next tram sensor — state is the departure text, attributes are the full tram list
   - sensor:
       name: "Tram Next Victoria"
-      command: "cat /config/tram_data/tram_status.json 2>/dev/null || echo '{\"status\":\"unavailable\"}'"
+      command: "cat /share/tram_status.json 2>/dev/null || echo '{\"status\":\"unavailable\"}'"
       scan_interval: 60
       value_template: >
         {% if value_json.status == 'success' %}
@@ -45,7 +45,7 @@ command_line:
   - sensor:
       name: "Tram Analyzer Health"
       command: >
-        curl -sf --max-time 5 http://tram-analyzer:5001/status 2>/dev/null
+        curl -sf --max-time 5 http://localhost:5001/status 2>/dev/null
         || echo '{"state":"unreachable","consecutive_failures":0}'
       scan_interval: 60
       value_template: "{{ value_json.state }}"

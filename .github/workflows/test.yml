@@ -7,7 +7,7 @@ on:
     branches: [main]
   schedule:
     # Run daily at 08:00 UTC to catch TfGM page structure changes
-    - cron: "0 8 * * 1-5"
+    - cron: "0 6 * * 1-5"
 
 jobs:
   test:
@@ -22,11 +22,11 @@ jobs:
       - name: Run tram analyzer
         env:
           OUTPUT_FILE: /tmp/tram_status.json
-          TRAM_WEBSITE_URL: https://tfgm.com/travel-updates/live-departures/tram/wythenshawe-park-tram
-          DESTINATION: victoria
+          TRAM_WEBSITE_URL: https://tfgm.com/travel-updates/live-departures/tram/prestwich-tram
+          DESTINATION: Piccadilly
         run: |
           uv run --with requests --with beautifulsoup4 \
-            tram-analyzer/tram_analyzer.py
+            tfgm_tram_analyzer/tram_analyzer.py
 
       - name: Validate output JSON
         run: |

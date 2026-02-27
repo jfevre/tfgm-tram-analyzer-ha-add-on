@@ -6,7 +6,7 @@ Scrapes the TfGM Bee Network departure board and outputs structured JSON.
 
 Configuration via environment variables:
   TRAM_WEBSITE_URL  — TfGM departure page URL for your stop
-  OUTPUT_FILE       — Path to write JSON output (default: /app/output/tram_status.json)
+  OUTPUT_FILE       — Path to write JSON output (default: /share/tram_status.json)
   DESTINATION       — Destination to filter for (default: victoria)
 """
 
@@ -21,7 +21,7 @@ URL = os.getenv(
     "TRAM_WEBSITE_URL",
     "https://tfgm.com/travel-updates/live-departures/tram/wythenshawe-park-tram"
 )
-OUTPUT_FILE = os.getenv("OUTPUT_FILE", "/app/output/tram_status.json")
+OUTPUT_FILE = os.getenv("OUTPUT_FILE", "/share/tram_status.json")
 DESTINATION = os.getenv("DESTINATION", "victoria").lower()
 
 HEADERS = {
