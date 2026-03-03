@@ -4,11 +4,23 @@
 export TRAM_WEBSITE_URL=$(bashio::config 'tram_website_url')
 export DESTINATIONS=$(bashio::config 'destinations | join(",")')
 export SCAN_INTERVAL=$(bashio::config 'scan_interval')
+export QUIET_HOURS_ENABLED=$(bashio::config 'quiet_hours_enabled')
+export QUIET_HOURS_START=$(bashio::config 'quiet_hours_start')
+export QUIET_HOURS_END=$(bashio::config 'quiet_hours_end')
+export LOG_ONLY_ON_CHANGE=$(bashio::config 'log_only_on_change')
 export PYTHONUNBUFFERED=1
 
-bashio::log.info "Starting TfGM Tram Analyzer v3.0"
+bashio::log.info "Starting TfGM Tram Analyzer v3.1"
 bashio::log.info "Stop URL: ${TRAM_WEBSITE_URL}"
 bashio::log.info "Destinations: ${DESTINATIONS}"
 bashio::log.info "Scan interval: ${SCAN_INTERVAL}s"
+
+if bashio::config.true 'quiet_hours_enabled'; then
+    bashio::log.info "Quiet hours: ${QUIET_HOURS_START}:00 - ${QUIET_HOURS_END}:00"
+fi
+
+if bashio::config.true 'log_only_on_change'; then
+    bashio::log.info "Logging: only on state changes or errors"
+fi
 
 exec python3 /app/api.py

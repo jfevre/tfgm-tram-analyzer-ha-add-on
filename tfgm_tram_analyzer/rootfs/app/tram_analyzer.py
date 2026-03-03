@@ -38,54 +38,20 @@ HEADERS = {
 }
 
 # All known Metrolink destinations — anchors the regex to avoid noise
+# These are the main termini and key stops used for filtering
 VALID_DESTINATIONS = {
-    "victoria",
-    "manchester airport",
     "altrincham",
+    "ashton-under-lyne",
     "bury",
-    "rochdale",
     "east didsbury",
     "eccles",
-    "ashton",
-    "ashton-under-lyne",
-    "oldham",
-    "shaw",
-    "firswood",
-    "piccadilly",
-    "deansgate - castlefield",
-    "cornbrook",
-    "mediacity uk",
-    "salford quays",
-    "exchange square",
-    "st peter's square",
-    "market street",
     "etihad campus",
-    "harbour city",
-    "anchorage",
-    "new islington",
-    "holt town",
-    "velopark",
-    "clayton hall",
-    "edge lane",
-    "droylsden",
-    "audenshaw",
-    "robinswood road",
-    "barton dock road",
-    "village",
-    "wharfside",
-    "imperial war museum",
+    "manchester airport",
+    "piccadilly",
+    "rochdale town centre",
     "the trafford centre",
-    "parkway",
-    "roundthorn",
-    "baguley",
-    "shadowmoss",
-    "martinscroft",
-    "crossacres",
-    "benchill",
-    "wythenshawe town centre",
-    "northern moor",
-    "peel hall",
-    "kingsway business park",
+    "trafford bar",
+    "victoria",
 }
 
 
@@ -236,7 +202,7 @@ def save_result(result: dict) -> dict:
 
 def main():
     start = datetime.now()
-    print(f"🚋 TfGM Tram Analyzer v3.0 — {start.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🚋 TfGM Tram Analyzer v3.1 — {start.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🔗 Stop: {URL}")
     dest_display = " / ".join(d.title() for d in DESTINATIONS)
     print(f"🎯 Filtering for: {dest_display}\n")

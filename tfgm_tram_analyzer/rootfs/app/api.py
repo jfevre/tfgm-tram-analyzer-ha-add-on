@@ -23,12 +23,20 @@ import uvicorn
 
 from tram_analyzer import fetch_and_build
 
-app = FastAPI(title="TfGM Tram Analyzer", version="3.0")
+app = FastAPI(title="TfGM Tram Analyzer", version="3.1")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 SUPERVISOR_TOKEN = os.getenv("SUPERVISOR_TOKEN", "")
 HA_API = "http://supervisor/core/api"
 SCAN_INTERVAL = int(os.getenv("SCAN_INTERVAL", "120"))
+
+# Quiet hours configuration
+QUIET_HOURS_ENABLED = os.getenv("QUIET_HOURS_ENABLED", "false").lower() == "true"
+QUIET_HOURS_START = int(os.getenv("QUIET_HOURS_START", "23"))
+QUIET_HOURS_END = int(os.getenv("QUIET_HOURS_END", "7"))
+
+# Logging configuration
+LOG_ONLY_ON_CHANGE = os.getenv("LOG_ONLY_ON_CHANGE", "true").lower() == "true"
 
 # ── Shared state (thread-safe) ────────────────────────────────────────────────
 _state = {
@@ -37,8 +45,24 @@ _state = {
     "last_success": None,
     "last_error": None,
     "consecutive_failures": 0,
+    "last_sensor_status": None,  # Track previous status (success/no_service/error) for change detection
+    "in_quiet_hours": False,
 }
 _state_lock = threading.Lock()
+
+
+def _is_quiet_hours() -> bool:
+    """Check if current time is within quiet hours."""
+    if not QUIET_HOURS_ENABLED:
+        return False
+
+    current_hour = datetime.now().hour
+
+    # Handle overnight ranges (e.g., 23:00 to 07:00)
+    if QUIET_HOURS_START > QUIET_HOURS_END:
+        return current_hour >= QUIET_HOURS_START or current_hour < QUIET_HOURS_END
+    else:
+        return QUIET_HOURS_START <= current_hour < QUIET_HOURS_END
 
 
 # ── Supervisor API ────────────────────────────────────────────────────────────
@@ -64,7 +88,7 @@ def _push_sensor(entity_id: str, state: str, attributes: dict) -> None:
         print(f"[WARN] Push failed for {entity_id}: {e}")
 
 
-def _push_tram_sensor(result: dict) -> None:
+def _push_tram_sensor(result: dict, force: bool = False) -> None:
     status = result.get("status")
     if status == "success":
         state = result["next_tram"]["departure_text"]
@@ -72,6 +96,18 @@ def _push_tram_sensor(result: dict) -> None:
         state = "No service"
     else:
         state = "Error"
+
+    # Check if STATUS has changed (for log_only_on_change mode)
+    # We track status (success/no_service/error), not departure times
+    with _state_lock:
+        last_status = _state.get("last_sensor_status")
+        status_changed = last_status != status
+
+        if LOG_ONLY_ON_CHANGE and not force and not status_changed:
+            print(f"[INFO] Status unchanged ({status}) — skipping HA push (state: {state})")
+            return
+
+        _state["last_sensor_status"] = status
 
     _push_sensor(
         "sensor.tram_next_departure",
@@ -89,9 +125,14 @@ def _push_tram_sensor(result: dict) -> None:
     )
 
 
-def _push_health_sensor() -> None:
+def _push_health_sensor(force: bool = False) -> None:
     with _state_lock:
         s = dict(_state)
+
+    # Only push health updates on error or when forced
+    if LOG_ONLY_ON_CHANGE and not force and s["state"] not in ("error", "running"):
+        return
+
     _push_sensor(
         "sensor.tram_analyzer_health",
         s["state"],
@@ -100,6 +141,7 @@ def _push_health_sensor() -> None:
             "last_success": s["last_success"],
             "last_error": s["last_error"],
             "consecutive_failures": s["consecutive_failures"],
+            "in_quiet_hours": s.get("in_quiet_hours", False),
             "friendly_name": "Tram Analyzer Health",
         },
     )
@@ -158,8 +200,31 @@ def run_analysis() -> None:
 # ── Scheduler ─────────────────────────────────────────────────────────────────
 def _scheduler() -> None:
     print(f"[INFO] Scheduler started — interval={SCAN_INTERVAL}s")
+    if QUIET_HOURS_ENABLED:
+        print(f"[INFO] Quiet hours enabled: {QUIET_HOURS_START:02d}:00 - {QUIET_HOURS_END:02d}:00")
+    if LOG_ONLY_ON_CHANGE:
+        print("[INFO] Log only on change: enabled")
+
     while True:
-        run_analysis()
+        if _is_quiet_hours():
+            with _state_lock:
+                was_quiet = _state.get("in_quiet_hours", False)
+                _state["in_quiet_hours"] = True
+                _state["state"] = "quiet"
+
+            if not was_quiet:
+                print(f"[INFO] Entering quiet hours ({QUIET_HOURS_START:02d}:00 - {QUIET_HOURS_END:02d}:00) — pausing scrapes")
+                _push_health_sensor(force=True)
+        else:
+            with _state_lock:
+                was_quiet = _state.get("in_quiet_hours", False)
+                _state["in_quiet_hours"] = False
+
+            if was_quiet:
+                print("[INFO] Exiting quiet hours — resuming scrapes")
+
+            run_analysis()
+
         time.sleep(SCAN_INTERVAL)
 
 
@@ -196,6 +261,6 @@ async def health():
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print(f"TfGM Tram Analyzer v3.0 — interval={SCAN_INTERVAL}s")
+    print(f"TfGM Tram Analyzer v3.1 — interval={SCAN_INTERVAL}s")
     threading.Thread(target=_scheduler, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=5001, log_level="warning")

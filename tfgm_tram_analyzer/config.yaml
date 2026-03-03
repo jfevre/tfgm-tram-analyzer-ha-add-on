@@ -1,5 +1,5 @@
 name: TfGM Tram Analyzer
-version: "3.0.0"
+version: "3.1.0"
 slug: tfgm_tram_analyzer
 description: Scrapes TfGM Metrolink live departure boards and pushes tram timing data directly to Home Assistant via the Supervisor API.
 url: "https://github.com/jfevre/tfgm-tram-analyzer-ha-add-on"
@@ -19,8 +19,16 @@ options:
   destinations:
     - "Piccadilly"
   scan_interval: 120
+  quiet_hours_enabled: false
+  quiet_hours_start: 23
+  quiet_hours_end: 7
+  log_only_on_change: true
 schema:
   tram_website_url: str
   destinations:
-    - str
+    - str|select(Altrincham|Ashton-under-Lyne|Bury|East Didsbury|Eccles|Etihad Campus|Manchester Airport|Piccadilly|Rochdale Town Centre|The Trafford Centre|Trafford Bar|Victoria)
   scan_interval: int
+  quiet_hours_enabled: bool
+  quiet_hours_start: int(0,23)
+  quiet_hours_end: int(0,23)
+  log_only_on_change: bool
