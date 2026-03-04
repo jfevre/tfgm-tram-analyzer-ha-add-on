@@ -26,7 +26,7 @@ options:
 schema:
   tram_website_url: url
   destinations:
-    - list(Altrincham|Ashton-under-Lyne|Bury|East Didsbury|Eccles|Etihad Campus|Manchester Airport|Piccadilly|Rochdale Town Centre|The Trafford Centre|Trafford Bar|Victoria)
+    - str
   scan_interval: int
   quiet_hours_enabled: bool
   quiet_hours_start: int(0,23)

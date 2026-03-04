@@ -10,7 +10,7 @@
 - **Reduced HA Activity Logging**: Only push to Home Assistant when status changes (success/no_service/error), not on every departure time update
   - `log_only_on_change`: Enable/disable (default: true)
   - Internal container logs still show all activity
-- **Simplified Destinations**: 12 main Metrolink termini available in dropdown, plus custom entry support
+- **Multiple Destinations**: Add multiple destination filters as a list
 
 ### Changes
 - Health sensor now includes `in_quiet_hours` attribute

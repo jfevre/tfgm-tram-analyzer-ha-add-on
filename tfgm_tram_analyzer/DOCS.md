@@ -9,7 +9,7 @@ the Supervisor API. No `configuration.yaml` sensors or REST commands needed.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `tram_website_url` | Prestwich stop | Full URL of your stop's TfGM live departure page |
-| `destinations` | `Piccadilly` | List of destination names to filter for. Select from dropdown or enter custom values. |
+| `destinations` | `Piccadilly` | List of destination names to filter for. Add multiple entries for multiple destinations. |
 | `scan_interval` | `120` | Seconds between scrapes |
 | `quiet_hours_enabled` | `false` | Pause scraping during specified hours to avoid rate limiting |
 | `quiet_hours_start` | `23` | Hour to start quiet period (0-23) |
@@ -21,24 +21,13 @@ the Supervisor API. No `configuration.yaml` sensors or REST commands needed.
 Visit [tfgm.com/travel-updates/live-departures](https://tfgm.com/travel-updates/live-departures)
 and navigate to your stop. Copy the full URL from the browser.
 
-### Available destinations
+### Common destinations
 
-The dropdown includes the main Metrolink termini:
+Main Metrolink termini you can filter for:
 
-- Altrincham
-- Ashton-under-Lyne
-- Bury
-- East Didsbury
-- Eccles
-- Etihad Campus
-- Manchester Airport
-- Piccadilly
-- Rochdale Town Centre
-- The Trafford Centre
-- Trafford Bar
-- Victoria
+Altrincham, Ashton-under-Lyne, Bury, East Didsbury, Eccles, Etihad Campus, Manchester Airport, Piccadilly, Rochdale Town Centre, The Trafford Centre, Trafford Bar, Victoria
 
-You can also enter custom destination names if needed.
+Enter the destination name exactly as it appears on the TfGM departure board.
 
 ## Home Assistant integration
 

@@ -33,7 +33,7 @@
 ### Configure
 
 1. Set your **tram stop URL** (find it at [tfgm.com/travel-updates/live-departures](https://tfgm.com/travel-updates/live-departures))
-2. Select your **destinations** from the dropdown (or enter custom values)
+2. Add your **destinations** (e.g., Piccadilly, Altrincham)
 3. Optionally enable **quiet hours** to pause overnight
 4. Click **Start**
 
@@ -44,27 +44,18 @@
 | Option | Default | Description |
 |--------|---------|-------------|
 | `tram_website_url` | Prestwich stop | Full URL of your stop's TfGM live departure page |
-| `destinations` | `Piccadilly` | Destinations to filter for (select from dropdown or enter custom) |
+| `destinations` | `Piccadilly` | List of destinations to filter for (add multiple entries) |
 | `scan_interval` | `120` | Seconds between scrapes |
 | `quiet_hours_enabled` | `false` | Pause scraping during specified hours |
 | `quiet_hours_start` | `23` | Hour to start quiet period (0-23) |
 | `quiet_hours_end` | `7` | Hour to end quiet period (0-23) |
 | `log_only_on_change` | `true` | Only push to HA when status changes (reduces activity log noise) |
 
-### Available Destinations
+### Common Destinations
 
-- Altrincham
-- Ashton-under-Lyne
-- Bury
-- East Didsbury
-- Eccles
-- Etihad Campus
-- Manchester Airport
-- Piccadilly
-- Rochdale Town Centre
-- The Trafford Centre
-- Trafford Bar
-- Victoria
+Main Metrolink termini you can filter for:
+
+Altrincham, Ashton-under-Lyne, Bury, East Didsbury, Eccles, Etihad Campus, Manchester Airport, Piccadilly, Rochdale Town Centre, The Trafford Centre, Trafford Bar, Victoria
 
 ---
 
@@ -161,7 +152,7 @@ See [CHANGELOG.md](tfgm_tram_analyzer/CHANGELOG.md) for version history.
 
 - **Quiet Hours**: Pause scraping during configurable hours (e.g., 11pm-7am)
 - **Reduced HA Logging**: Only push on status changes, not departure time updates
-- **Simplified Destinations**: 12 main Metrolink termini in dropdown
+- **Multiple Destinations**: Add multiple destination filters as a list
 
 ### v3.0.0
 
